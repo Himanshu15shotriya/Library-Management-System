@@ -4,7 +4,7 @@
   "description": "library management system",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "node index.js"
   },
   "author": "himanshu",
   "license": "ISC",
