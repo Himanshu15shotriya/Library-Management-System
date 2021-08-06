@@ -38,6 +38,9 @@ const User = require('./routes/userRouter');
 //actual routes
 app.use("/admin", Admin);
 app.use("/user", User);
+app.get("/",(req,res) => {
+  res.send("This is home page")
+})
 
 //passport middleware
 app.use(passport.initialize());
