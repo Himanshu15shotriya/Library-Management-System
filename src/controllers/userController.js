@@ -36,21 +36,22 @@ module.exports.userSignup = (req,res) => {
                         if (err) throw err;
                         newUser.password = hash;
                         newUser
-                            .save()
-                            .then(profile => {
-                                if(profile){
-                                    res.status(200).json({
-                                        success: true,
-                                        message : `SignUp successfull with ${req.body.email}`,
-                                        profile
-                                    })
-                                }
-                            })
-                            .catch(err => res.status(400).json({
-                                success : false,
-                                message : err.message
-                            }))
-            })})
+                        .save()
+                        .then(profile => {
+                            if(profile){
+                                res.status(200).json({
+                                    success: true,
+                                    message : `SignUp successfull with ${req.body.email}`,
+                                    profile
+                                })
+                            }
+                        })
+                        .catch(err => res.status(400).json({
+                            success : false,
+                            message : err.message
+                        }))
+                    })
+                })
             }else{
                 res.status(400).json({success:false,message : "Password Doesn't Match"})
             }
