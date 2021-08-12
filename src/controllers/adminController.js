@@ -13,12 +13,10 @@ const User = require('../models/Users');
 // @route    /admin/signup
 // @desc     route for signup of admins.
 // @access   PUBLIC
-module.exports.adminSignup = (req, res) => {
-    Admin.findOne({
-            email: req.body.email
-        })
-        .then(profile => {
-            if (profile) {
+module.exports.adminSignup = async(req, res) => {
+    try{
+        const admin = await Admin.findOne({email: req.body.email})
+            if (admin) {
                 res.status(400).json({
                     success: false,
                     message: `${req.body.email} is already Registerd`
@@ -36,21 +34,19 @@ module.exports.adminSignup = (req, res) => {
                         bcrypt.hash(newAdmin.password, salt, (err, hash) => {
                             if (err) throw err;
                             newAdmin.password = hash;
-                            newAdmin
-                                .save()
-                                .then(profile => {
-                                    if (profile) {
-                                        res.status(200).json({
-                                            success: true,
-                                            message: `SignUp successfull with ${req.body.email}`,
-                                            profile
-                                        })
-                                    }
+                            const profile = newAdmin.save()
+                            if (profile) {
+                                res.status(200).json({
+                                    success: true,
+                                    message: `SignUp successfull with ${req.body.email}`,
+                                    profile : newAdmin
                                 })
-                                .catch(err => res.status(400).json({
-                                    success: false,
-                                    message: err.message
-                                }))
+                            }else{
+                                res.status(400).json({
+                                    success: true,
+                                    message: "Admin account creation error",
+                                })
+                            }
                         })
                     })
                 } else {
@@ -60,11 +56,11 @@ module.exports.adminSignup = (req, res) => {
                     })
                 }
             }
-        })
-        .catch(err => res.status(400).json({
-            success: false,
-            message: err.message
-        }))
+        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -72,72 +68,63 @@ module.exports.adminSignup = (req, res) => {
 // @route    /admin/signin
 // @desc     route for sign of admins.
 // @access   PUBLIC 
-module.exports.adminSignin = (req, res) => {
-    var password = req.body.password
-    Admin.findOne({
-            email: req.body.email
-        })
-        .then(admin => {
-            if (!admin) {
-                res.status(400).json({
-                    success: false,
-                    message: `Admin does not exist with ${req.body.email}`
-                })
-            } else {
-                bcrypt.compare(password, admin.password)
-                    .then(isCorrect => {
-                        if (!isCorrect) {
-                            res.status(400).json({
-                                success: false,
-                                message: "Please Enter Correct Password"
-                            })
-                        } else {
-                            const payload = {
-                                id: admin.id,
-                                email: admin.email
-                            }
-                            jsonwt.sign(
-                                payload,
-                                key.secret, {
-                                    expiresIn: 3600
-                                }, (err, token) => {
-                                    if (err) {
-                                        res.status(400).json({
-                                            success: false,
-                                            message: "Token error"
-                                        })
-                                    } else {
-                                        Admin.findOneAndUpdate({
-                                                email: req.body.email
-                                            }, {
-                                                token: "Bearer " + token
-                                            })
-                                            .then(admin => {
-                                                if (admin) {
-                                                    res.status(200).json({
-                                                        success: true,
-                                                        message: `Login successfull with ${req.body.email}`,
-                                                        token: "Bearer " + token
-                                                    })
-                                                }
-                                            })
-                                            .catch(err => res.status(400).json({
-                                                success: false
-                                            }, err.message))
-                                    }
-                                }
-                            )
-                        }
-                    })
-                    .catch(err => res.status(400).json({
-                        success: false
-                    }, err.message))
-            }
-        })
-        .catch(err => res.status(400).json({
+module.exports.adminSignin = async(req, res) => {
+    try{
+        var password = req.body.password
+    const admin = await Admin.findOne({email: req.body.email})
+    if (!admin) {
+        res.status(400).json({
             success: false,
-            message: err.message
-        }))
+            message: `Admin does not exist with ${req.body.email}`
+        })
+    } else {
+        const comparePassword = await bcrypt.compare(password, admin.password)
+        if (!comparePassword) {
+            res.status(400).json({
+                success: false,
+                message: "Please Enter Correct Password"
+            })
+        } else {
+            const payload = {
+                id: admin.id,
+                email: admin.email
+            }
+            jsonwt.sign(
+                payload,
+                key.secret,
+                {expiresIn: 3600},
+                (err, token) => {
+                    if (err) {
+                        res.status(400).json({
+                            success: false,
+                            message: "Token error"
+                        })
+                    } else {
+                        Admin.findOneAndUpdate(
+                            {email: req.body.email},
+                            {token: "Bearer " + token}
+                            )
+                            .then(admin => {
+                                if (admin) {
+                                    res.status(200).json({
+                                        success: true,
+                                        message: `Login successfull with ${req.body.email}`,
+                                        token: "Bearer " + token
+                                    })
+                                }
+                            })
+                            .catch(err => res.status(400).json({
+                                success: false
+                            }, err.message))
+                    }
+                }
+            )
+        }            
+    }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -145,27 +132,25 @@ module.exports.adminSignin = (req, res) => {
 // @route    /admin/profile
 // @desc     route for profile of admin.
 // @access   PRIVATE
-module.exports.adminProfile = (req, res) => {
-    Admin.findOne({
-            _id: req.user.id
-        })
-        .then(profile => {
-            if (profile) {
-                res.json({
-                    id: req.user.id,
-                    libraryname: req.user.libraryname,
-                    email: req.user.email
-                })
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: "No profile found"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false
-        }, err.message))
+module.exports.adminProfile = async(req, res) => {
+    try{
+        const admin = await Admin.findOne({_id: req.user.id})
+        if (admin) {
+            res.json({
+                id: req.user.id,
+                libraryname: req.user.libraryname,
+                email: req.user.email
+            })
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "No profile found"
+            })
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -173,26 +158,24 @@ module.exports.adminProfile = (req, res) => {
 // @route    /admin/books
 // @desc     route for getting books details of admin.
 // @access   PRIVATE
-module.exports.books = (req, res) => {
-    Book.find({
-            admin: req.user.id
-        })
-        .then(books => {
-            if (books) {
-                res.status(200).json({
-                    success: true,
-                    books
-                })
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: "No Books Found"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false
-        }, err.message))
+module.exports.books = async(req, res) => {
+    try{
+        const books = await Book.find({admin: req.user.id})
+        if (books) {
+            res.status(200).json({
+                success: true,
+                books
+            })
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "No Books Found"
+            })
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -200,53 +183,38 @@ module.exports.books = (req, res) => {
 // @route    /admin/add-book
 // @desc     route for adding books.
 // @access   PRIVATE
-module.exports.addBook = (req, res) => {
-    Book.findOne({
-            admin : req.user.id,
-            bookname: req.body.bookname
-        })
-        .then(book => {
-            if (book) {
-                res.status(400).json({
-                    success: false,
-                    message: "This book is already added to the list Please update the Quantity!"
+module.exports.addBook = async (req, res) => {
+    try{
+        const book = await Book.findOne({admin : req.user.id,bookname: req.body.bookname})
+        if (book) {
+            res.status(400).json({
+                success: false,
+                message: "This book is already added to the list Please update the Quantity!"
+            })
+        } else {
+            const bookDetails = {}
+            bookDetails.admin = req.user.id;
+            if (req.body.bookname) bookDetails.bookname = req.body.bookname;
+            if (req.body.bookquantity) bookDetails.bookquantity = req.body.bookquantity;
+
+            const newBook = Book.findOne({_id: req.user.id})
+            new Book(bookDetails).save()
+            if (newBook) {
+                res.status(200).json({
+                    success: true,
+                    message: "Book added to the list successfully"
                 })
             } else {
-                const bookDetails = {}
-                bookDetails.admin = req.user.id;
-                if (req.body.bookname) bookDetails.bookname = req.body.bookname;
-                if (req.body.bookquantity) bookDetails.bookquantity = req.body.bookquantity;
-
-                Book.findOne({
-                        _id: req.user.id
-                    })
-                    .then(profile => {
-                        new Book(bookDetails).save()
-                            .then(books => {
-                                if (books) {
-                                    res.status(200).json({
-                                        success: true,
-                                        message: "Book added to the list successfully"
-                                    })
-                                } else {
-                                    res.status(400).json({
-                                        success: false,
-                                        message: "error in adding book"
-                                    })
-                                }
-                            })
-                            .catch(err => res.status(400).json({
-                                success: false
-                            }, err.message))
-                    })
-                    .catch(err => res.status(400).json({
-                        success: false
-                    }, err.message))
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false
-        }, err.message))
+                res.status(400).json({
+                    success: false,
+                    message: "error in adding book"
+                })
+            }                    
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -254,31 +222,31 @@ module.exports.addBook = (req, res) => {
 // @route    /admin/update-book
 // @desc     route for updating book details.
 // @access   PRIVATE
-module.exports.updateBook = (req, res) => {
-    const bookDetailsUpdate = {}
-    if (req.body.bookquantity) bookDetailsUpdate.bookquantity = req.body.bookquantity;
+module.exports.updateBook = async(req, res) => {
+    try{
+        const bookDetailsUpdate = {}
+        if (req.body.bookquantity) bookDetailsUpdate.bookquantity = req.body.bookquantity;
 
-    Book.findOneAndUpdate({
-            _id: req.params.id
-        }, {
-            $set: bookDetailsUpdate
-        })
-        .then(book => {
-            if (book) {
-                res.status(200).json({
-                    success: true,
-                    message: "Book Quantity Updated Successfully"
-                })
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: "Error in updatation"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false
-        }, err.message))
+        const book = await Book.findOneAndUpdate(
+            {_id: req.params.id},
+            {$set: bookDetailsUpdate}
+        )
+        if (book) {
+            res.status(200).json({
+                success: true,
+                message: "Book Quantity Updated Successfully"
+            })
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "Error in updatation"
+            })
+        }
+        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -286,26 +254,24 @@ module.exports.updateBook = (req, res) => {
 // @route    /admin/delete-book
 // @desc     route for deleting book details.
 // @access   PRIVATE
-module.exports.deleteBook = (req, res) => {
-    Book.findOneAndRemove({
-            _id: req.params.id
-        })
-        .then(book => {
-            if (book) {
-                res.status(200).json({
-                    success: true,
-                    message: "Books Deleted Successfully"
-                })
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: "Error in deleting book"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false
-        }, err.message))
+module.exports.deleteBook = async(req, res) => {
+    try{
+        const book = await Book.findOneAndRemove({_id: req.params.id})
+        if (book) {
+            res.status(200).json({
+                success: true,
+                message: "Books Deleted Successfully"
+            })
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "Error in deleting book"
+            })
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -409,27 +375,24 @@ module.exports.adminSignout = (req, res) => {
 // @route    /admin/all-user
 // @desc     route for getting all user list
 // @access   PRIVATE
-module.exports.allUsers = (req, res) => {
-    User.find({
-            admin: req.user.id
-        })
-        .then(user => {
-            if (user) {
-                res.status(400).json({
-                    success: true,
-                    user
-                })
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: "No users found"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false,
-            message: err.message
-        }))
+module.exports.allUsers = async(req, res) => {
+    try{
+        const user = await User.find({admin: req.user.id})
+        if (user) {
+            res.status(400).json({
+                success: true,
+                user
+            })
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "No users found"
+            })
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -437,27 +400,24 @@ module.exports.allUsers = (req, res) => {
 // @route    /admin/book-issued
 // @desc     route for getting particular book details
 // @access   PRIVATE
-module.exports.bookIssued = (req, res) => {
-    Bookissue.find({
-            bookid: req.params.id
-        })
-        .then(books => {
-            if (books) {
-                res.status(200).json({
-                    success: true,
-                    books
-                })
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: "No books found"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false,
-            message: err.message
-        }))
+module.exports.bookIssued = async(req, res) => {
+    try{
+        const books = await Bookissue.find({bookid: req.params.id})
+        if (books) {
+            res.status(200).json({
+                success: true,
+                books
+            })
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "No books found"
+            })
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -465,27 +425,25 @@ module.exports.bookIssued = (req, res) => {
 // @route    /admin/all-book-issued
 // @desc     route for getting all issued book details
 // @access   PRIVATE
-module.exports.allBookIssued = (req, res) => {
-    Bookissue.find({
-            admin: req.user.id
-        })
-        .then(admin => {
-            if (admin) {
-                res.status(200).json({
-                    success: true,
-                    issuedbooks: admin
-                })
-            } else {
-                res.status(404).json({
-                    success: false,
-                    message: err.message
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false,
-            message: err.message
-        }))
+module.exports.allBookIssued = async(req, res) => {
+    try{
+        const admin = await Bookissue.find({admin: req.user.id})
+        if (admin) {
+            res.status(200).json({
+                success: true,
+                issuedbooks: admin
+            })
+        } else {
+            res.status(404).json({
+                success: false,
+                message: err.message
+            })
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
+
 }
 
 
@@ -493,51 +451,36 @@ module.exports.allBookIssued = (req, res) => {
 // @route    /admin/user-details/:id
 // @desc     route for getting details of particular user
 // @access   PRIVATE
-module.exports.userDetails = (req, res) => {
-    User.findOne({
-            _id: req.params.id
-        })
-        .then(user => {
-            if (user) {
-                Bookissue.find({
-                        user: req.params.id
-                    })
-                    .then(books => {
-                        if (books) {
-                            res.status(200).json({
-                                success: true,
-                                user: {
-                                    admin: user.admin,
-                                    user: user.id,
-                                    name: user.name,
-                                    email: user.email,
-                                    mobile: user.mobile,
-                                    cards: user.card
-                                },
-                                issuedbooks: books
-                            })
-                        } else {
-                            res.status(400).json({
-                                success: false,
-                                message: "No books found"
-                            })
-                        }
-                    })
-                    .catch(err => res.status(400).json({
-                        success: false,
-                        message: err.message
-                    }))
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: "User not found"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
+module.exports.userDetails = async(req, res) => {
+    const user = await User.findOne({_id: req.params.id})
+    if (user) {
+        const books = await Bookissue.find({user: req.params.id})
+        if (books) {
+            res.status(200).json({
+                success: true,
+                user: {
+                    admin: user.admin,
+                    user: user.id,
+                    name: user.name,
+                    email: user.email,
+                    mobile: user.mobile,
+                    cards: user.card
+                },
+                issuedbooks: books
+            })
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "No books found"
+            })
+        }            
+    } else {
+        res.status(400).json({
             success: false,
-            message: err.message
-        }))
+            message: "User not found"
+        })
+    }
+        
 }
 
 
@@ -545,30 +488,29 @@ module.exports.userDetails = (req, res) => {
 // @route    /admin/user-card-book
 // @desc     route for updating user card details.
 // @access   PRIVATE
-module.exports.userCardUpdate = (req,res) => {
-    const cardUpdate = {}
-    if(req.body.card) cardUpdate.card = req.body.card
-    User.findOneAndUpdate(
-        {_id :req.params.id},
-        {$set : cardUpdate},
-        {new : true},
+module.exports.userCardUpdate = async(req,res) => {
+    try{
+        const cardUpdate = {}
+        if(req.body.card) cardUpdate.card = req.body.card
+        const user = await User.findOneAndUpdate(
+            {_id :req.params.id},
+            {$set : cardUpdate},
+            {new : true},
         )
-        .then((user) => {
-            if(!user){
-                response.status(400).json({
-                    success : false ,
-                    message :"Error in updating card"
-                })
-            }
-            else{
-                res.status(200).json({
-                    success : true,
-                    message : "Card update successfully"
-                })
-            }
-        })
-        .catch(err => res.status(400).json({
-            success: false,
-            message: err.message
-        }))
+        if(!user){
+            response.status(400).json({
+                success : false ,
+                message :"Error in updating card"
+            })
+        }
+        else{
+            res.status(200).json({
+                success : true,
+                message : "Card update successfully"
+            })
+        }
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
