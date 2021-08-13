@@ -175,28 +175,35 @@ module.exports.userProfile = async (req,res) => {
 module.exports.userDelete = async (req, res) => {
     try{
         let Password = req.body.password;
-    let confpassword = req.user.password;
+        let confpassword = req.user.password;
 
-    const isMatch = await bcrypt.compare(Password, confpassword) 
-    if(isMatch){
-        const user = await User.findOneAndRemove({_id: req.user.id})
-        if(user){
-            res.status(200).json({
-                success: true,
-                message: `Your Account Registered With ${req.user.email} Has Been Deleted Successfully`
-            })
+        const isMatch = await bcrypt.compare(Password, confpassword) 
+            if(isMatch){
+                if(req.user.card ==3){
+                const user = await User.findOneAndRemove({_id: req.user.id})
+                if(user){
+                        res.status(200).json({
+                            success: true,
+                            message: `Your Account Registered With ${req.user.email} Has Been Deleted Successfully`
+                        })
+                }else{
+                    res.status(404).json({
+                        success: false,
+                        message: `No Account Found Registered With ${req.user.email}`
+                    })
+                }
+            }else{
+                res.status(400).json({
+                    success: false,
+                    message: "Please submit your books first"
+                })
+            }
         }else{
-            res.status(404).json({
+            res.status(400).json({
                 success: false,
-                message: `No Account Found Registered With ${req.user.email}`
+                message: "You Have Entered An Incorrect Password"
             })
         }
-    }else{
-        res.status(400).json({
-            success: false,
-            message: "You Have Entered An Incorrect Password"
-        })
-    }
     }
     catch(err){
         return res.status(500).send({message:err.message,status:500,success:true})
