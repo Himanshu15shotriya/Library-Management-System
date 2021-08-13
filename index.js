@@ -4,7 +4,7 @@ const passport = require('passport');
 
 const app = express();
 
-mongoose.connect("mongodb+srv://himanshu:himanshu@library-management-syst.e77wp.mongodb.net/test", {useUnifiedTopology: true, useNewUrlParser: true});
+mongoose.connect("mongodb+srv://himanshu:himanshu@library-management-syst.e77wp.mongodb.net/test", {useUnifiedTopology: true, useNewUrlParser: true,useFindAndModify : false});
 
 app.use(express.json());
 app.use(
