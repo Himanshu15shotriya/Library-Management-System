@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const middleware = require('../config/middleware');
-const validation = require('../config/validation')
+const middleware = require('../middlewares/middleware');
+const validation = require('../middlewares/validation')
 
 var ctradmin = require("../src/controllers/adminController")
 

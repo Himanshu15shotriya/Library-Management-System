@@ -1,10 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
+const dotenv = require('dotenv');
+dotenv.config({path : "./config/dev.env"})
 
 const app = express();
 
-mongoose.connect("mongodb+srv://himanshu:himanshu@library-management-syst.e77wp.mongodb.net/test", {useUnifiedTopology: true, useNewUrlParser: true,useFindAndModify : false});
+mongoose.connect(process.env.URL, {useUnifiedTopology: true, useNewUrlParser: true,useFindAndModify : false});
 
 app.use(express.json());
 app.use(
@@ -51,6 +53,6 @@ app.use(passport.initialize());
 //config for jwt starategy
 require("./strategy/jsonwtStrategy")(passport)
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 app.listen(port, () => {console.log(`app is running at port ${port}`)});

@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs');
 const jsonwt = require('jsonwebtoken');
-const key = require('../../setup/myurl');
 const _ = require('lodash');
 
 //models
@@ -83,7 +82,7 @@ module.exports.userSignin = async(req,res) => {
                 }
                 jsonwt.sign(
                     payload,
-                    key.secret,
+                    process.env.SECRET,
                     {expiresIn : 3600},
                     (err,token) =>{
                         if(err){
