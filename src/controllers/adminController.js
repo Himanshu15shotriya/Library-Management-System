@@ -15,25 +15,23 @@ const User = require('../models/Users');
 module.exports.adminSignup = async(req, res) => {
     try{
         const admin = await Admin.findOne({email: req.body.email})
-            if (admin) {
-                res.status(400).json({
-                    success: false,
-                    message: `${req.body.email} is already Registerd`
-                })
-            } else {
-                newAdmin = new Admin({
-                    libraryname: req.body.libraryname,
-                    email: req.body.email,
-                    password: req.body.password,
-                    confirmpassword: req.body.confirmpassword,
-
-                })
-                if (req.body.password === req.body.confirmpassword) {
-                    bcrypt.genSalt(10, (err, salt) => {
-                        bcrypt.hash(newAdmin.password, salt, (err, hash) => {
-                            if (err) throw err;
-                            newAdmin.password = hash;
-                            const profile = newAdmin.save()
+        if (admin) {
+            res.status(400).json({
+                success: false,
+                message: `${req.body.email} is already Registerd`
+            })
+        }else{                
+            if (req.body.password === req.body.confirmpassword) {
+                bcrypt.genSalt(10, (err, salt) => {
+                    bcrypt.hash(req.body.password, salt, async(err, hash) => {
+                        if (err) throw err;
+                        const newAdmin = new Admin({
+                            ...req.body,
+                        })
+                        newAdmin.password = hash;
+                        newAdmin
+                        .save()
+                        .then(profile => {
                             if (profile) {
                                 res.status(200).json({
                                     success: true,
@@ -47,15 +45,18 @@ module.exports.adminSignup = async(req, res) => {
                                 })
                             }
                         })
+                        .catch(err => {
+                            return res.status(500).send({message:err.message,status:500,success:false})
+                        })                            
                     })
-                } else {
-                    res.status(400).json({
-                        success: false,
-                        message: "Password and confirm password are not matched"
-                    })
-                }
+                })
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: "Password and confirm password are not matched"
+                })
             }
-        
+        }        
     }
     catch(err){
         return res.status(500).send({message:err.message,status:500,success:true})
@@ -196,19 +197,19 @@ module.exports.addBook = async (req, res) => {
             if (req.body.bookname) bookDetails.bookname = req.body.bookname;
             if (req.body.bookquantity) bookDetails.bookquantity = req.body.bookquantity;
 
-            const newBook = Book.findOne({_id: req.user.id})
-            new Book(bookDetails).save()
-            if (newBook) {
+            Book.findOne({_id: req.user.id})
+            const book = await new Book(bookDetails).save()
+            if (book) {
                 res.status(200).json({
                     success: true,
                     message: "Book added to the list successfully"
                 })
-            } else {
+            }else{
                 res.status(400).json({
                     success: false,
                     message: "error in adding book"
                 })
-            }                    
+            }                   
         }        
     }
     catch(err){
@@ -222,29 +223,31 @@ module.exports.addBook = async (req, res) => {
 // @desc     route for updating book details.
 // @access   PRIVATE
 module.exports.updateBook = async(req, res) => {
-    try{
-        const bookDetailsUpdate = {}
-        if (req.body.bookquantity) bookDetailsUpdate.bookquantity = req.body.bookquantity;
-
-        const book = await Book.findOneAndUpdate(
-            {_id: req.params.id},
-            {$set: bookDetailsUpdate}
-        )
-        if (book) {
-            res.status(200).json({
-                success: true,
-                message: "Book Quantity Updated Successfully"
-            })
-        } else {
-            res.status(400).json({
-                success: false,
-                message: "Error in updatation"
-            })
-        }
+    try {
+        if((req.body.bookquantity).length != 0 ){
+            const bookUpdate = {}
+            if(req.body.bookquantity) bookUpdate.bookquantity = req.body.bookquantity;
         
-    }
-    catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+            const update = await Book.findByIdAndUpdate(
+                {_id:req.params.id},
+                {$set: bookUpdate}
+            )
+            if(update){
+                res.status(200).json({
+                    success: true,
+                    Message: "Book Quantity Updated successfully"
+                })
+            }else{
+                res.status(400).json({
+                    success: false,
+                    Message: "book not found"
+                })
+            }
+        }else{
+            res.status(500).send({success: false, message: "Please Enter Book Quantity"})
+        }
+    } catch (error) {
+        res.status(500).send({success: false, message:error.message})
     }
 }
 
@@ -397,7 +400,7 @@ module.exports.allUsers = async(req, res) => {
 
 // @type     GET
 // @route    /admin/book-issued
-// @desc     route for getting particular book details
+// @desc     route for getting particular issued book details
 // @access   PRIVATE
 module.exports.bookIssued = async(req, res) => {
     try{

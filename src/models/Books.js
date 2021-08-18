@@ -8,9 +8,11 @@ const BookSchema = new Schema({
     },
     bookname : {
         type : String,
+        required : true
     },
     bookquantity : {
         type : Number,
+        required : true
     }
 })
     

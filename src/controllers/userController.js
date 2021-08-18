@@ -17,36 +17,39 @@ module.exports.userSignup = async(req,res) => {
     try{
         const user = await User.findOne({email : req.body.email})
         if(user){
-                res.status(400).json({
-                    success:false,
-                    message : `${req.body.email} is already registered`
-                });
+            res.status(400).json({
+                success:false,
+                message : `${req.body.email} is already registered`
+            });
         }else{
-            newUser = new User({
-                name : req.body.name,
-                email : req.body.email,
-                password : req.body.password,
-                mobile : req.body.mobile,
-                admin : req.params.id
-            })
             if(req.body.password === req.body.confirmpassword){
                 bcrypt.genSalt(10, (err, salt) => {
-                    bcrypt.hash(newUser.password, salt, (err, hash) => {
+                    bcrypt.hash(req.body.password, salt, (err, hash) => {
                         if (err) throw err;
+                        const newUser = new User({
+                            ...req.body,
+                            admin : req.params.id
+                        })
                         newUser.password = hash;
-                        const newuser = newUser.save()
-                        if(newuser){
-                            res.status(200).json({
-                                success: true,
-                                message : `SignUp successfull with ${req.body.email}`,
-                                newUser
-                            })
-                        }else{
-                            res.status(400).json({
-                                success: false,
-                                message : "Account creation error"
-                            })
-                        }
+                        newUser
+                        .save()
+                        .then(newUser => {
+                            if(newUser){
+                                res.status(200).json({
+                                    success: true,
+                                    message : `SignUp successfull with ${req.body.email}`,
+                                    newUser
+                                })
+                            }else{
+                                res.status(400).json({
+                                    success: false,
+                                    message : "Account creation error"
+                                })
+                            }
+                        })
+                        .catch(err => {
+                            return res.status(500).send({message:err.message,status:500,success:false})
+                        })
                     })
                 })
             }else{
