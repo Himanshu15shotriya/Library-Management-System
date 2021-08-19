@@ -10,43 +10,45 @@ const Bookissue = require('../models/Bookissue')
 
 
 // @type     POST
-// @route    /admin/signup
-// @desc     route for signup of admins.
+// @route    /user/signup
+// @desc     route for signup of users.
 // @access   PUBLIC
 module.exports.userSignup = async(req,res) => {
     try{
         const user = await User.findOne({email : req.body.email})
         if(user){
-                res.status(400).json({
-                    success:false,
-                    message : `${req.body.email} is already registered`
-                });
+            res.status(400).json({
+                success:false,
+                message : `${req.body.email} is already registered`
+            });
         }else{
-            newUser = new User({
-                name : req.body.name,
-                email : req.body.email,
-                password : req.body.password,
-                mobile : req.body.mobile,
-                admin : req.params.id
-            })
             if(req.body.password === req.body.confirmpassword){
                 bcrypt.genSalt(10, (err, salt) => {
-                    bcrypt.hash(newUser.password, salt, (err, hash) => {
+                    bcrypt.hash(req.body.password, salt, (err, hash) => {
                         if (err) throw err;
+                        const newUser = new User({
+                            ...req.body
+                        })
                         newUser.password = hash;
-                        const newuser = newUser.save()
-                        if(newuser){
-                            res.status(200).json({
-                                success: true,
-                                message : `SignUp successfull with ${req.body.email}`,
-                                newUser
-                            })
-                        }else{
-                            res.status(400).json({
-                                success: false,
-                                message : "Account creation error"
-                            })
-                        }
+                        newUser
+                        .save()
+                        .then(newUser => {
+                            if(newUser){
+                                res.status(200).json({
+                                    success: true,
+                                    message : `SignUp successfull with ${req.body.email}`,
+                                    newUser
+                                })
+                            }else{
+                                res.status(400).json({
+                                    success: false,
+                                    message : "Account creation error"
+                                })
+                            }
+                        })
+                        .catch(err => {
+                            return res.status(500).send({message:err.message,status:500,success:false})
+                        })
                     })
                 })
             }else{
@@ -59,10 +61,9 @@ module.exports.userSignup = async(req,res) => {
     }
 }
 
-
 // @type     POST
-// @route    /admin/signin
-// @desc     route for signin of admins.
+// @route    /user/signin
+// @desc     route for signin of user.
 // @access   PUBLIC
 module.exports.userSignin = async(req,res) => {
     try{
@@ -219,7 +220,7 @@ module.exports.userSignout = async (req,res) => {
     try{
         var user = await User.findOne({_id : req.user.id})
         if(!user){
-            res.status(400).json({success: false, message : "User not found"})
+            res.status(404).json({success: false, message : "User not found"})
         }
         else{            
             const tokenReset = {
@@ -247,7 +248,7 @@ module.exports.userSignout = async (req,res) => {
 // @desc     route for fetching all books.
 // @access   PRIVATE
 module.exports.allBooks = async(req, res) => {
-    const book = await Book.find({admin:req.params.id})
+    const book = await Book.find({admin:req.user.admin})
     if(book){
         res.json(book)
     }else{
