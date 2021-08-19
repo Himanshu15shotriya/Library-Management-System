@@ -318,7 +318,7 @@ module.exports.profileDelete = async(req, res) => {
 // @route    /admin/signout
 // @desc     route for signout from profile of admin.
 // @access   PRIVATE
-module.exports.adminSignout = (req, res) => {
+module.exports.adminSignout = async(req, res) => {
     try{
         const admin = await Admin.findOne({_id: req.user.id})
         if (!admin) {
