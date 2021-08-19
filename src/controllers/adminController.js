@@ -281,7 +281,7 @@ module.exports.deleteBook = async(req, res) => {
 // @route    /admin/profile-delete/:id
 // @desc     route for delete profile of admin.
 // @access   PRIVATE
-module.exports.profileDelete = (req, res) => {
+module.exports.profileDelete = async(req, res) => {
     try{
         const profile = await Admin.findOne({_id: req.user.id})
         var password = req.body.password;
