@@ -71,38 +71,38 @@ module.exports.adminSignup = async(req, res) => {
 module.exports.adminSignin = async(req, res) => {
     try{
         var password = req.body.password
-    const admin = await Admin.findOne({email: req.body.email})
-    if (!admin) {
-        res.status(400).json({
-            success: false,
-            message: `Admin does not exist with ${req.body.email}`
-        })
-    } else {
-        const comparePassword = await bcrypt.compare(password, admin.password)
-        if (!comparePassword) {
+        const admin = await Admin.findOne({email: req.body.email})
+        if (!admin) {
             res.status(400).json({
                 success: false,
-                message: "Please Enter Correct Password"
+                message: `Admin does not exist with ${req.body.email}`
             })
         } else {
-            const payload = {
-                id: admin.id,
-                email: admin.email
-            }
-            jsonwt.sign(
-                payload,
-                process.env.SECRET,
-                {expiresIn: 3600},
-                (err, token) => {
-                    if (err) {
-                        res.status(400).json({
-                            success: false,
-                            message: "Token error"
-                        })
-                    } else {
-                        Admin.findOneAndUpdate(
-                            {email: req.body.email},
-                            {token: "Bearer " + token}
+            const comparePassword = await bcrypt.compare(password, admin.password)
+            if (!comparePassword) {
+                res.status(400).json({
+                    success: false,
+                    message: "Please Enter Correct Password"
+                })
+            } else {
+                const payload = {
+                    id: admin.id,
+                    email: admin.email
+                }
+                jsonwt.sign(
+                    payload,
+                    process.env.SECRET,
+                    {expiresIn: 3600},
+                    (err, token) => {
+                        if (err) {
+                            res.status(400).json({
+                                success: false,
+                                message: "Token error"
+                            })
+                        } else {
+                            Admin.findOneAndUpdate(
+                                {email: req.body.email},
+                                {token: "Bearer " + token}
                             )
                             .then(admin => {
                                 if (admin) {
@@ -116,11 +116,11 @@ module.exports.adminSignin = async(req, res) => {
                             .catch(err => res.status(400).json({
                                 success: false
                             }, err.message))
+                        }
                     }
-                }
-            )
-        }            
-    }        
+                )
+            }            
+        }        
     }
     catch(err){
         return res.status(500).send({message:err.message,status:500,success:true})
@@ -224,7 +224,7 @@ module.exports.addBook = async (req, res) => {
 // @access   PRIVATE
 module.exports.updateBook = async(req, res) => {
     try {
-        if((req.body.bookquantity).length != 0 ){
+        if((req.body.bookquantity).length > 0 && req.body.bookquantity>=0 ){
             const bookUpdate = {}
             if(req.body.bookquantity) bookUpdate.bookquantity = req.body.bookquantity;
         
@@ -244,7 +244,7 @@ module.exports.updateBook = async(req, res) => {
                 })
             }
         }else{
-            res.status(500).send({success: false, message: "Please Enter Book Quantity"})
+            res.status(500).send({success: false, message: "Please Enter A Valid Quantity"})
         }
     } catch (error) {
         res.status(500).send({success: false, message:error.message})
@@ -253,7 +253,7 @@ module.exports.updateBook = async(req, res) => {
 
 
 // @type     GET
-// @route    /admin/delete-book
+// @route    /admin/delete-book/:id
 // @desc     route for deleting book details.
 // @access   PRIVATE
 module.exports.deleteBook = async(req, res) => {
@@ -281,54 +281,36 @@ module.exports.deleteBook = async(req, res) => {
 // @route    /admin/profile-delete
 // @desc     route for delete profile of admin.
 // @access   PRIVATE
-module.exports.profileDelete = (req, res) => {
-    Admin.findOne({
-            _id: req.user.id
-        })
-        .then(profile => {
-            var password = req.body.password;
-            if (profile) {
-                bcrypt.compare(password, profile.password)
-                    .then(isCorrect => {
-                        if (isCorrect) {
-                            Admin.findOneAndRemove({
-                                    _id: req.user.id
-                                })
-                                .then(profile => {
-                                    if (profile) {
-                                        res.json({
-                                            success: true,
-                                            Message: `Account Registered With ${req.user.email} has been deleted successfully`,
-                                        })
-                                    } else {
-                                        res.status(400).json({
-                                            success: false,
-                                            Message: "Some Error In Deleting Account",
-                                        })
-                                    }
-                                })
-                                .catch(err => res.status(400).json({
-                                    success: false,
-                                    Message: err.message,
-                                }))
-                        } else {
-                            res.status(400).json({
-                                success: false,
-                                Message: "Please Enter correct Password.",
-                            })
-                        }
+module.exports.profileDelete = async(req, res) => {
+    try{
+        const profile = await Admin.findOne({_id: req.user.id})
+        var password = req.body.password;
+        if (profile) {
+            const isCorrect = await bcrypt.compare(password, profile.password)
+            if (isCorrect) {
+                const profileDelete = await Admin.findOneAndRemove({_id: req.user.id})
+                if (profileDelete) {
+                    res.json({
+                        success: true,
+                        Message: `Account Registered With ${req.user.email} has been deleted successfully`,
                     })
-                    .catch(err => res.status(400).json({
+                } else {
+                    res.status(400).json({
                         success: false,
-                        Message: err.message,
-                    }))
-            }
-        })
-        .catch(err => res.json({
-            success: false,
-            Message: err.message,
-        }));
-
+                        Message: "Some Error In Deleting Account",
+                    })
+                }                    
+            } else {
+                res.status(400).json({
+                    success: false,
+                    Message: "Please Enter correct Password.",
+                })
+            }                
+        }        
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }
 }
 
 
@@ -336,40 +318,38 @@ module.exports.profileDelete = (req, res) => {
 // @route    /admin/signout
 // @desc     route for signout from profile of admin.
 // @access   PRIVATE
-module.exports.adminSignout = (req, res) => {
-    Admin.findOne({
-            _id: req.user.id
-        })
-        .then(profile => {
-            if (!profile) {
-                res.json({
-                    success: false,
-                    message: "Profile Not found."
-                })
-            } else {
-                Admin.findOneAndUpdate({
-                    _id: req.user.id
-                })
-                const tokenreset = {
-                    token: ''
-                }
-                profile = _.extend(profile, tokenreset)
-                profile.save((err, profile) => {
-                    if (err) {
-                        res.json({
-                            success: false,
-                            message: "Error In Sign Out"
-                        })
-                    } else {
-                        res.json({
-                            success: true,
-                            message: `You have logged out successfully from ${req.user.email}`
-                        })
-                    }
-                })
+module.exports.adminSignout = async(req, res) => {
+    try{
+        const admin = await Admin.findOne({_id: req.user.id})
+        if (!admin) {
+            res.status(404).json({
+                success: false,
+                message: "Profile Not found."
+            })
+        }else{
+            Admin.findOneAndUpdate({_id: req.user.id})
+            const tokenreset = {
+                token: ''
             }
-        })
-        .catch(err => res.json("err1"))
+            profile = _.extend(admin, tokenreset)
+            profile.save((err, admin) => {
+                if (err) {
+                    res.json({
+                        success: false,
+                        message: "Error In Sign Out"
+                    })
+                } else {
+                    res.json({
+                        success: true,
+                        message: `You have logged out successfully from ${req.user.email}`
+                    })
+                }
+            })
+        }
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:true})
+    }        
 }
 
 
@@ -491,24 +471,31 @@ module.exports.userDetails = async(req, res) => {
 // @desc     route for updating user card details.
 // @access   PRIVATE
 module.exports.userCardUpdate = async(req,res) => {
-    try{
-        const cardUpdate = {}
-        if(req.body.card) cardUpdate.card = req.body.card
-        const user = await User.findOneAndUpdate(
-            {_id :req.params.id},
-            {$set : cardUpdate},
-            {new : true},
-        )
-        if(!user){
-            response.status(400).json({
+    try{        
+        if((req.body.card).length > 0 && req.body.card>=0 ){
+            const cardUpdate = {}
+            if(req.body.card) cardUpdate.card = req.body.card
+            const user = await User.findOneAndUpdate(
+                {_id :req.params.id},
+                {$set : cardUpdate},
+                {new : true},
+            )
+            if(!user){
+                res.status(400).json({
+                    success : false ,
+                    message :"Error in updating card"
+                })
+            }
+            else{
+                res.status(200).json({
+                    success : true,
+                    message : "Card update successfully"
+                })
+            }
+        }else{
+            res.status(400).json({
                 success : false ,
-                message :"Error in updating card"
-            })
-        }
-        else{
-            res.status(200).json({
-                success : true,
-                message : "Card update successfully"
+                message :"Please enter the valid value"
             })
         }
     }

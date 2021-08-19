@@ -10,8 +10,8 @@ const Bookissue = require('../models/Bookissue')
 
 
 // @type     POST
-// @route    /admin/signup
-// @desc     route for signup of admins.
+// @route    /user/signup
+// @desc     route for signup of users.
 // @access   PUBLIC
 module.exports.userSignup = async(req,res) => {
     try{
@@ -27,8 +27,7 @@ module.exports.userSignup = async(req,res) => {
                     bcrypt.hash(req.body.password, salt, (err, hash) => {
                         if (err) throw err;
                         const newUser = new User({
-                            ...req.body,
-                            admin : req.params.id
+                            ...req.body
                         })
                         newUser.password = hash;
                         newUser
@@ -222,7 +221,7 @@ module.exports.userSignout = async (req,res) => {
     try{
         var user = await User.findOne({_id : req.user.id})
         if(!user){
-            res.status(400).json({success: false, message : "User not found"})
+            res.status(404).json({success: false, message : "User not found"})
         }
         else{            
             const tokenReset = {
@@ -250,7 +249,7 @@ module.exports.userSignout = async (req,res) => {
 // @desc     route for fetching all books.
 // @access   PRIVATE
 module.exports.allBooks = async(req, res) => {
-    const book = await Book.find({admin:req.params.id})
+    const book = await Book.find({admin:req.user.admin})
     if(book){
         res.json(book)
     }else{

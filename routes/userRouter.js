@@ -6,7 +6,7 @@ const validation = require('../middlewares/validation');
 
 var ctruser = require("../src/controllers/userController");
 
-router.post("/signup/:id",validation, ctruser.userSignup);
+router.post("/signup",validation, ctruser.userSignup);
 
 router.post("/signin", ctruser.userSignin);
 
@@ -16,7 +16,7 @@ router.post("/delete-user",passport.authenticate("jwt-2", {session:false}),middl
 
 router.get("/signout",passport.authenticate("jwt-2", {session:false}),middleware, ctruser.userSignout);
 
-router.get("/all-books/:id",passport.authenticate("jwt-2", {session:false}),middleware, ctruser.allBooks);
+router.get("/all-books",passport.authenticate("jwt-2", {session:false}),middleware, ctruser.allBooks);
 
 router.get("/book-issue/:id",passport.authenticate("jwt-2", {session:false}),middleware, ctruser.bookIssue);
 
