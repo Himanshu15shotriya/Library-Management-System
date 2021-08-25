@@ -136,22 +136,15 @@ module.exports.userSignin = async(req,res) => {
 // @access   PRIVATE
 module.exports.userProfile = async (req,res) => {
     try{
-        const user = await User.findOne({_id : req.user.id})
+        const user = await User.findOne({_id : req.user.id}).select({token:0,__v:0,password:0})
         if(user){
-            const books = await Bookissue.find({user:req.user.id})
+            const books = await Bookissue.find({user:req.user.id}).select({bookname:1,issuedate:1})
             if(books){
-                res.status(200).json([{
+                res.status(200).json({
                     success : true,
-                },{
-                    admin : req.user.admin,
-                    user : req.user.id,
-                    name : req.user.name,
-                    email : req.user.email,
-                    mobile : req.user.mobile,
-                    cards : req.user.card,
-                },{
+                    user : user,
                     issuedbooks : books
-                }])
+                })
             }else{
                 res.status(400).json({
                     success:false,

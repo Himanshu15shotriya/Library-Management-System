@@ -359,7 +359,7 @@ module.exports.adminSignout = async(req, res) => {
 // @access   PRIVATE
 module.exports.allUsers = async(req, res) => {
     try{
-        const user = await User.find({admin: req.user.id})
+        const user = await User.find({admin: req.user.id}).select({name : 1,email : 1, mobile : 1})
         if (user) {
             res.status(400).json({
                 success: true,
@@ -384,16 +384,16 @@ module.exports.allUsers = async(req, res) => {
 // @access   PRIVATE
 module.exports.bookIssued = async(req, res) => {
     try{
-        const books = await Bookissue.find({bookid: req.params.id})
-        if (books) {
+        const books = await Bookissue.find({admin : req.user.id,bookid: req.params.id,})
+        if (Object.keys(books).length===0) {
+                res.status(400).json({
+                success: false,
+                message: "No books found"
+            })
+        } else {
             res.status(200).json({
                 success: true,
                 books
-            })
-        } else {
-            res.status(400).json({
-                success: false,
-                message: "No books found"
             })
         }        
     }
@@ -410,7 +410,7 @@ module.exports.bookIssued = async(req, res) => {
 module.exports.allBookIssued = async(req, res) => {
     try{
         const admin = await Bookissue.find({admin: req.user.id})
-        if (admin) {
+        if (Object.keys(admin).length!== 0) {
             res.status(200).json({
                 success: true,
                 issuedbooks: admin
@@ -418,7 +418,7 @@ module.exports.allBookIssued = async(req, res) => {
         } else {
             res.status(404).json({
                 success: false,
-                message: err.message
+                message: "No book found"
             })
         }        
     }
@@ -434,7 +434,7 @@ module.exports.allBookIssued = async(req, res) => {
 // @desc     route for getting details of particular user
 // @access   PRIVATE
 module.exports.userDetails = async(req, res) => {
-    const user = await User.findOne({_id: req.params.id})
+    const user = await User.findOne({_id: req.params.id,admin:req.user.id})
     if (user) {
         const books = await Bookissue.find({user: req.params.id})
         if (books) {
@@ -443,7 +443,6 @@ module.exports.userDetails = async(req, res) => {
                 user: {
                     admin: user.admin,
                     user: user.id,
-                    name: user.name,
                     email: user.email,
                     mobile: user.mobile,
                     cards: user.card
@@ -467,7 +466,7 @@ module.exports.userDetails = async(req, res) => {
 
 
 // @type     POST
-// @route    /admin/user-card-book
+// @route    /admin/user-cardupdate/:id
 // @desc     route for updating user card details.
 // @access   PRIVATE
 module.exports.userCardUpdate = async(req,res) => {
@@ -476,7 +475,7 @@ module.exports.userCardUpdate = async(req,res) => {
             const cardUpdate = {}
             if(req.body.card) cardUpdate.card = req.body.card
             const user = await User.findOneAndUpdate(
-                {_id :req.params.id},
+                {_id :req.params.id,admin : req.user.id},
                 {$set : cardUpdate},
                 {new : true},
             )
