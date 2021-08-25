@@ -359,7 +359,7 @@ module.exports.adminSignout = async(req, res) => {
 // @access   PRIVATE
 module.exports.allUsers = async(req, res) => {
     try{
-        const user = await User.find({admin: req.user.id})
+        const user = await User.find({admin: req.user.id}).select({name : 1,email : 1, mobile : 1})
         if (user) {
             res.status(400).json({
                 success: true,
@@ -476,7 +476,7 @@ module.exports.userCardUpdate = async(req,res) => {
             const cardUpdate = {}
             if(req.body.card) cardUpdate.card = req.body.card
             const user = await User.findOneAndUpdate(
-                {_id :req.params.id},
+                {_id :req.params.id,admin : req.user.id},
                 {$set : cardUpdate},
                 {new : true},
             )
