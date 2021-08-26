@@ -41,7 +41,7 @@ const User = require('./routes/userRouter');
 app.use("/admin", Admin);
 app.use("/user", User);
 app.get("/",(req,res) => {
-  res.send("Welcome")
+  res.send("Welcome to the library")
 })
 
 //passport middleware
