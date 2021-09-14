@@ -61,10 +61,9 @@ module.exports.userSignup = async(req,res) => {
     }
 }
 
-
 // @type     POST
-// @route    /admin/signin
-// @desc     route for signin of admins.
+// @route    /user/signin
+// @desc     route for signin of user.
 // @access   PUBLIC
 module.exports.userSignin = async(req,res) => {
     try{

@@ -66,7 +66,7 @@ module.exports.adminSignup = async(req, res) => {
 
 // @type     POST
 // @route    /admin/signin
-// @desc     route for sign of admins.
+// @desc     route for signin of admins.
 // @access   PUBLIC 
 module.exports.adminSignin = async(req, res) => {
     try{
@@ -224,7 +224,7 @@ module.exports.addBook = async (req, res) => {
 // @access   PRIVATE
 module.exports.updateBook = async(req, res) => {
     try {
-        if((req.body.bookquantity).length > 0 && req.body.bookquantity>=0 ){
+        if((req.body.bookquantity).length != 0 && req.body.bookquantity >= 0 ){
             const bookUpdate = {}
             if(req.body.bookquantity) bookUpdate.bookquantity = req.body.bookquantity;
         
@@ -244,7 +244,7 @@ module.exports.updateBook = async(req, res) => {
                 })
             }
         }else{
-            res.status(500).send({success: false, message: "Please Enter A Valid Quantity"})
+            res.status(500).send({success: false, message: "Please Enter Valid Quantity"})
         }
     } catch (error) {
         res.status(500).send({success: false, message:error.message})
@@ -278,7 +278,7 @@ module.exports.deleteBook = async(req, res) => {
 
 
 // @type     GET
-// @route    /admin/profile-delete
+// @route    /admin/profile-delete/:id
 // @desc     route for delete profile of admin.
 // @access   PRIVATE
 module.exports.profileDelete = async(req, res) => {
@@ -349,7 +349,7 @@ module.exports.adminSignout = async(req, res) => {
     }
     catch(err){
         return res.status(500).send({message:err.message,status:500,success:false})
-    }        
+    }
 }
 
 
@@ -471,7 +471,7 @@ module.exports.userDetails = async(req, res) => {
 // @access   PRIVATE
 module.exports.userCardUpdate = async(req,res) => {
     try{        
-        if((req.body.card).length > 0 && req.body.card>=0 ){
+        if((req.body.card).length > 0 && req.body.card >= 0){
             const cardUpdate = {}
             if(req.body.card) cardUpdate.card = req.body.card
             const user = await User.findOneAndUpdate(
@@ -494,7 +494,7 @@ module.exports.userCardUpdate = async(req,res) => {
         }else{
             res.status(400).json({
                 success : false ,
-                message :"Please enter the valid value"
+                message :"Please enter valid value"
             })
         }
     }
