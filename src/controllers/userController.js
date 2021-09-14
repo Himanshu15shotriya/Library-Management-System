@@ -57,7 +57,7 @@ module.exports.userSignup = async(req,res) => {
         }
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -125,7 +125,7 @@ module.exports.userSignin = async(req,res) => {
         }
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -157,7 +157,7 @@ module.exports.userProfile = async (req,res) => {
         }
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -200,7 +200,7 @@ module.exports.userDelete = async (req, res) => {
         }
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -232,7 +232,7 @@ module.exports.userSignout = async (req,res) => {
         }
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -242,11 +242,16 @@ module.exports.userSignout = async (req,res) => {
 // @desc     route for fetching all books.
 // @access   PRIVATE
 module.exports.allBooks = async(req, res) => {
-    const book = await Book.find({admin:req.user.admin})
-    if(book){
-        res.json(book)
-    }else{
-        res.json("some error occured")
+    try{
+        const book = await Book.find({admin:req.user.admin})
+        if(book){
+            res.json(book)
+        }else{
+            res.json("some error occured")
+        }
+    }
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -343,7 +348,7 @@ module.exports.bookIssue = async (req, res) => {
         }
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -410,7 +415,7 @@ module.exports.bookSubmit = async(req, res) => {
                                             }
                                         })
                                         .catch(err=>
-                                            res.status(500).send({message:err.message,status:500,success:true})
+                                            res.status(500).send({message:err.message,status:500,success:false})
                                         )    
                                     }
                                 })
@@ -433,6 +438,6 @@ module.exports.bookSubmit = async(req, res) => {
         }
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
