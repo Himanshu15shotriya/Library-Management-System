@@ -1,6 +1,6 @@
 module.exports = (req,res,next) => {
     if((req.body.email.includes("@")) && req.body.email.includes(".")){
-        if((req.body.password).length>6){
+        if((req.body.password).length>=6){
             return next()
         }else{
             res.status(400).json({
