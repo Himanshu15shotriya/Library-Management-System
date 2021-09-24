@@ -16,7 +16,7 @@ module.exports.adminSignup = async(req, res) => {
     try{
         const admin = await Admin.findOne({email: req.body.email})
         if (admin) {
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: `${req.body.email} is already Registerd`
             })
@@ -39,7 +39,7 @@ module.exports.adminSignup = async(req, res) => {
                                     profile : newAdmin
                                 })
                             }else{
-                                res.status(400).json({
+                                res.status(200).json({
                                     success: true,
                                     message: "Admin account creation error",
                                 })
@@ -51,7 +51,7 @@ module.exports.adminSignup = async(req, res) => {
                     })
                 })
             } else {
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     message: "Password and confirm password are not matched"
                 })
@@ -59,7 +59,7 @@ module.exports.adminSignup = async(req, res) => {
         }        
     }
     catch(err){
-        return res.status(500).send({message:err.message,status:500,success:true})
+        return res.status(500).send({message:err.message,status:500,success:false})
     }
 }
 
@@ -73,14 +73,14 @@ module.exports.adminSignin = async(req, res) => {
         var password = req.body.password
         const admin = await Admin.findOne({email: req.body.email})
         if (!admin) {
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: `Admin does not exist with ${req.body.email}`
             })
         } else {
             const comparePassword = await bcrypt.compare(password, admin.password)
             if (!comparePassword) {
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     message: "Please Enter Correct Password"
                 })
@@ -95,21 +95,22 @@ module.exports.adminSignin = async(req, res) => {
                     {expiresIn: 3600},
                     (err, token) => {
                         if (err) {
-                            res.status(400).json({
+                            res.status(200).json({
                                 success: false,
                                 message: "Token error"
                             })
                         } else {
                             Admin.findOneAndUpdate(
                                 {email: req.body.email},
-                                {token: "Bearer " + token}
-                            )
+                                {token: "Bearer " + token},
+                                {new : true}
+                            ).select({password : 0,__v : 0})
                             .then(admin => {
                                 if (admin) {
                                     res.status(200).json({
                                         success: true,
                                         message: `Login successfull with ${req.body.email}`,
-                                        token: "Bearer " + token
+                                        data : admin
                                     })
                                 }
                             })
@@ -142,7 +143,7 @@ module.exports.adminProfile = async(req, res) => {
                 email: req.user.email
             })
         } else {
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: "No profile found"
             })
@@ -167,7 +168,7 @@ module.exports.books = async(req, res) => {
                 books
             })
         } else {
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: "No Books Found"
             })
@@ -187,7 +188,7 @@ module.exports.addBook = async (req, res) => {
     try{
         const book = await Book.findOne({admin : req.user.id,bookname: req.body.bookname})
         if (book) {
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: "This book is already added to the list Please update the Quantity!"
             })
@@ -205,7 +206,7 @@ module.exports.addBook = async (req, res) => {
                     message: "Book added to the list successfully"
                 })
             }else{
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     message: "error in adding book"
                 })
@@ -238,7 +239,7 @@ module.exports.updateBook = async(req, res) => {
                     Message: "Book Quantity Updated successfully"
                 })
             }else{
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     Message: "book not found"
                 })
@@ -265,7 +266,7 @@ module.exports.deleteBook = async(req, res) => {
                 message: "Books Deleted Successfully"
             })
         } else {
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: "Error in deleting book"
             })
@@ -295,13 +296,13 @@ module.exports.profileDelete = async(req, res) => {
                         Message: `Account Registered With ${req.user.email} has been deleted successfully`,
                     })
                 } else {
-                    res.status(400).json({
+                    res.status(200).json({
                         success: false,
                         Message: "Some Error In Deleting Account",
                     })
                 }                    
             } else {
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     Message: "Please Enter correct Password.",
                 })
@@ -322,7 +323,7 @@ module.exports.adminSignout = async(req, res) => {
     try{
         const admin = await Admin.findOne({_id: req.user.id})
         if (!admin) {
-            res.status(404).json({
+            res.status(200).json({
                 success: false,
                 message: "Profile Not found."
             })
@@ -333,13 +334,13 @@ module.exports.adminSignout = async(req, res) => {
             }
             profile = _.extend(admin, tokenreset)
             profile.save((err, admin) => {
-                if (err) {
-                    res.json({
+                if(err){
+                    res.status(200).json({
                         success: false,
                         message: "Error In Sign Out"
                     })
-                } else {
-                    res.json({
+                }else{
+                    res.status(200).json({
                         success: true,
                         message: `You have logged out successfully from ${req.user.email}`
                     })
@@ -361,12 +362,12 @@ module.exports.allUsers = async(req, res) => {
     try{
         const user = await User.find({admin: req.user.id}).select({name : 1,email : 1, mobile : 1})
         if (user) {
-            res.status(400).json({
+            res.status(200).json({
                 success: true,
                 user
             })
         } else {
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: "No users found"
             })
@@ -385,12 +386,12 @@ module.exports.allUsers = async(req, res) => {
 module.exports.bookIssued = async(req, res) => {
     try{
         const books = await Bookissue.find({admin : req.user.id,bookid: req.params.id,})
-        if (Object.keys(books).length===0) {
-                res.status(400).json({
+        if(Object.keys(books).length===0) {
+                res.status(200).json({
                 success: false,
                 message: "No books found"
             })
-        } else {
+        }else{
             res.status(200).json({
                 success: true,
                 books
@@ -410,13 +411,13 @@ module.exports.bookIssued = async(req, res) => {
 module.exports.allBookIssued = async(req, res) => {
     try{
         const admin = await Bookissue.find({admin: req.user.id})
-        if (Object.keys(admin).length!== 0) {
+        if(Object.keys(admin).length !== 0) {
             res.status(200).json({
                 success: true,
                 issuedbooks: admin
             })
-        } else {
-            res.status(404).json({
+        }else{
+            res.status(200).json({
                 success: false,
                 message: "No book found"
             })
@@ -425,7 +426,6 @@ module.exports.allBookIssued = async(req, res) => {
     catch(err){
         return res.status(500).send({message:err.message,status:500,success:false})
     }
-
 }
 
 
@@ -434,34 +434,38 @@ module.exports.allBookIssued = async(req, res) => {
 // @desc     route for getting details of particular user
 // @access   PRIVATE
 module.exports.userDetails = async(req, res) => {
-    const user = await User.findOne({_id: req.params.id,admin:req.user.id})
-    if (user) {
-        const books = await Bookissue.find({user: req.params.id})
-        if (books) {
+    try{
+        const user = await User.findOne({_id: req.params.id,admin:req.user.id})
+        if (user){
+            const books = await Bookissue.find({user: req.params.id})
+            if (books){
+                res.status(200).json({
+                    success: true,
+                    user: {
+                        admin: user.admin,
+                        user: user.id,
+                        email: user.email,
+                        mobile: user.mobile,
+                        cards: user.card
+                    },
+                    issuedbooks: books
+                })
+            }else{
+                res.status(200).json({
+                    success: false,
+                    message: "No books found"
+                })
+            }            
+        }else{
             res.status(200).json({
-                success: true,
-                user: {
-                    admin: user.admin,
-                    user: user.id,
-                    email: user.email,
-                    mobile: user.mobile,
-                    cards: user.card
-                },
-                issuedbooks: books
-            })
-        } else {
-            res.status(400).json({
                 success: false,
-                message: "No books found"
+                message: "User not found"
             })
-        }            
-    } else {
-        res.status(400).json({
-            success: false,
-            message: "User not found"
-        })
+        }
     }
-        
+    catch(err){
+        return res.status(500).send({message:err.message,status:500,success:false})
+    }
 }
 
 
@@ -480,7 +484,7 @@ module.exports.userCardUpdate = async(req,res) => {
                 {new : true},
             )
             if(!user){
-                res.status(400).json({
+                res.status(200).json({
                     success : false ,
                     message :"Error in updating card"
                 })
@@ -492,7 +496,7 @@ module.exports.userCardUpdate = async(req,res) => {
                 })
             }
         }else{
-            res.status(400).json({
+            res.status(200).json({
                 success : false ,
                 message :"Please enter valid value"
             })

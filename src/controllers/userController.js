@@ -40,7 +40,7 @@ module.exports.userSignup = async(req,res) => {
                                     newUser
                                 })
                             }else{
-                                res.status(400).json({
+                                res.status(200).json({
                                     success: false,
                                     message : "Account creation error"
                                 })
@@ -52,7 +52,7 @@ module.exports.userSignup = async(req,res) => {
                     })
                 })
             }else{
-                res.status(400).json({success:false,message : "Password and Confirm Passoword are not Matched"})
+                res.status(200).json({success:false,message : "Password and Confirm Passoword are not Matched"})
             }
         }
     }
@@ -69,7 +69,7 @@ module.exports.userSignin = async(req,res) => {
     try{
         const user = await User.findOne({email : req.body.email})
         if(!user){
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message:"User not found Please sign up first"
             })
@@ -87,7 +87,7 @@ module.exports.userSignin = async(req,res) => {
                     {expiresIn : 3600},
                     (err,token) =>{
                         if(err){
-                            res.status(400).json({
+                            res.status(200).json({
                                 success:false,
                                 message : "Token Creation Error"
                             })
@@ -97,26 +97,26 @@ module.exports.userSignin = async(req,res) => {
                                 {_id : user.id},
                                 {token : "Bearer " + token},
                                 {new : true}
-                            )
+                            ).select({password : 0,__v : 0})
                             .then(user => {
                                 if(user){
                                     res.status(200).json({
                                         success : true,
                                         message : `Sign in successfully with ${req.body.email}`,
-                                        token : "Bearer " + token
+                                        data : user
                                     })
                                 }
                                 else{
-                                    res.status(400).json({success : false, message: err.message})
+                                    res.status(200).json({success : false, message: err.message})
                                 }
                             })
-                            .catch(err => res.status(400).json({success : false, message : err.message}))
+                            .catch(err => res.status(500).json({success : false, message : err.message}))
                         }
                     }
                 )
             }
             else{
-                res.status(400).json({
+                res.status(200).json({
                     success : false,
                     message : "Please Enter Correct Password"
                 })
@@ -145,14 +145,14 @@ module.exports.userProfile = async (req,res) => {
                     issuedbooks : books
                 })
             }else{
-                res.status(400).json({
+                res.status(200).json({
                     success:false,
                     message : "User profile not found"
                 })
             }
         }
         else{
-            res.status(400).json({success : false, message : "User Not Found"})
+            res.status(200).json({success : false, message : "User Not Found"})
         }
     }
     catch(err){
@@ -180,19 +180,19 @@ module.exports.userDelete = async (req, res) => {
                             message: `Your Account Registered With ${req.user.email} Has Been Deleted Successfully`
                         })
                 }else{
-                    res.status(404).json({
+                    res.status(200).json({
                         success: false,
                         message: `No Account Found Registered With ${req.user.email}`
                     })
                 }
             }else{
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     message: "Please submit your books first"
                 })
             }
         }else{
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: "You Have Entered An Incorrect Password"
             })
@@ -213,7 +213,7 @@ module.exports.userSignout = async (req,res) => {
     try{
         var user = await User.findOne({_id : req.user.id})
         if(!user){
-            res.status(404).json({success: false, message : "User not found"})
+            res.status(200).json({success: false, message : "User not found"})
         }
         else{            
             const tokenReset = {
@@ -222,7 +222,7 @@ module.exports.userSignout = async (req,res) => {
             user = _.extend(user,tokenReset)
             user.save((err,user)=> {
                 if(err){
-                    res.status(400).json({success: false, message : "Error in reseting token"})
+                    res.status(200).json({success: false, message : "Error in reseting token"})
                 }
                 else{
                     res.status(200).json({success: true, message: "SignOut Successfully"})
@@ -244,9 +244,9 @@ module.exports.allBooks = async(req, res) => {
     try{
         const book = await Book.find({admin:req.user.admin})
         if(book){
-            res.json(book)
+            res.status(200).json({success : true,book})
         }else{
-            res.json("some error occured")
+            res.status(200).json({success : false,message : "some error occured"})
         }
     }
     catch(err){
@@ -263,14 +263,14 @@ module.exports.bookIssue = async (req, res) => {
     try{
         var book = await Book.findOne({_id:req.params.id})
         if(!book){
-            res.status(400).json({
+            res.status(200).json({
                 success: false,
                 message: "Book Not found."
             })
         }else{
             var user = await User.findOne({_id:req.user.id})
             if(!user){
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     message: "User Not found."
                 })
@@ -285,7 +285,7 @@ module.exports.bookIssue = async (req, res) => {
                             book=_.extend(book, bookUpdate)
                             book.save((err, book) => {
                                 if(err){
-                                    res.status(400).json({
+                                    res.status(200).json({
                                         success: false,
                                         message: err.message
                                     })
@@ -297,7 +297,7 @@ module.exports.bookIssue = async (req, res) => {
                                     user=_.extend(user,cardUpdate)
                                     user.save((err, user) => {
                                         if(err){
-                                            res.status(400).json({
+                                            res.status(200).json({
                                                 success: false,
                                                 message: err.message
                                             })
@@ -316,7 +316,7 @@ module.exports.bookIssue = async (req, res) => {
                                                     newBookissue,
                                                 })
                                             }else{
-                                                res.status(400).json({
+                                                res.status(200).json({
                                                     success : false,
                                                     message : "Error In Issue Book"
                                                 })
@@ -326,19 +326,19 @@ module.exports.bookIssue = async (req, res) => {
                                 }
                             })
                         }else{
-                            res.status(400).json({
+                            res.status(200).json({
                                 success : false,
                                 message  : "You Dont Have any card to issue this book please submit a book first !"
                             })
                         }                
                     }else{
-                        res.status(400).json({
+                        res.status(200).json({
                             success : false,
                             message  : "This Book is not available in library !!"
                         })
                     }
                 }else{
-                    res.status(400).json({
+                    res.status(200).json({
                         success : false,
                         message  : "This Book is not available in library !!"
                     })
@@ -362,14 +362,14 @@ module.exports.bookSubmit = async(req, res) => {
         if(userInBookIssue){
             var book = await Book.findOne({_id:req.params.id})
             if(!book){
-                res.status(400).json({
+                res.status(200).json({
                     success: false,
                     message: "Book Not found."
                 })
             }else{
                 var user = await User.findOne({_id:req.user.id})
                 if(!user){
-                    res.status(400).json({
+                    res.status(200).json({
                         success: false,
                         message: "User Not found."
                     })
@@ -382,7 +382,7 @@ module.exports.bookSubmit = async(req, res) => {
                         book=_.extend(book, bookUpdate)
                         book.save((err, book) => {
                             if(err){
-                                res.status(400).json({
+                                res.status(200).json({
                                     success: false,
                                     message: err.message
                                 })
@@ -394,7 +394,7 @@ module.exports.bookSubmit = async(req, res) => {
                                 user=_.extend(user,cardUpdate)
                                 user.save((err, user) => {
                                     if(err){
-                                        res.status(400).json({
+                                        res.status(200).json({
                                             success: false,
                                             message: err.message
                                         })
@@ -407,7 +407,7 @@ module.exports.bookSubmit = async(req, res) => {
                                                     message:`Book ${book.bookname} submitted successfully`,
                                                 })    
                                             }else{
-                                                res.status(400).json({
+                                                res.status(200).json({
                                                     success : false,
                                                     message : err.message
                                                 })
@@ -422,7 +422,7 @@ module.exports.bookSubmit = async(req, res) => {
                         })
                     }
                     else{
-                        res.status(400).json({
+                        res.status(200).json({
                             success : false,
                             message : "You havent issued this book yet please issue first"
                         })
@@ -430,7 +430,7 @@ module.exports.bookSubmit = async(req, res) => {
                 }                                                            
             }
         }else{
-            res.status(400).json({
+            res.status(200).json({
                 success : false,
                 message : "You havent issued this book yet please issue first"
             })

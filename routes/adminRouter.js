@@ -6,7 +6,7 @@ const validation = require('../middlewares/validation')
 
 var ctradmin = require("../src/controllers/adminController")
 
-router.get("/signup",validation, ctradmin.adminSignup);
+router.post("/signup",validation, ctradmin.adminSignup);
 
 router.post("/signin", ctradmin.adminSignin);
 
